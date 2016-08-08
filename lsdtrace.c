@@ -74,7 +74,7 @@ find_probes(probefilter_t *filter)
   /* get dtrace handle */
   dtrace_hdl_t *dh = dtrace_open(DTRACE_VERSION, flags, &err);
   if (err) {
-    printf("%s: %s\n", strerror(errno), dtrace_errmsg(dh, err));
+    fprintf(stderr, "%s: %s\n", strerror(errno), dtrace_errmsg(dh, err));
     return err;
   }
 
