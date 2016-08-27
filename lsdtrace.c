@@ -35,6 +35,8 @@
 #include <dtrace.h>
 
 typedef struct {
+  int pidprobes;
+
   char *provider;
   char *mod;
   char *func;
@@ -46,6 +48,14 @@ static int
 probeinfo(dtrace_hdl_t *dh, const dtrace_probedesc_t *desc, void *ud)
 {
   probefilter_t *filter = ud;
+
+  /* filter out (duplicated per) pid probes by default */
+  if (!(filter->pidprobes)) {
+    const char *provider = desc->dtpd_provider;
+    int c = provider[strlen(provider) - 1];
+    if (isdigit(c))
+      return 0;
+  }
 
 #define FILTER_OUT(F, V) (F && fnmatch(F, V, 0))
   if (FILTER_OUT(filter->provider, desc->dtpd_provider)
@@ -90,7 +100,7 @@ main(int argc, char *argv[])
   int c;
   probefilter_t filter;
   
-  static struct option longopts[] = {
+  static struct option globopt[] = {
     {"provider", required_argument, NULL, 'p'},
     {"module", required_argument, NULL, 'm'},
     {"function", required_argument, NULL, 'f'},
@@ -98,9 +108,15 @@ main(int argc, char *argv[])
     {NULL, 0, NULL, 0}
   };
 
+  struct option longopts[] = {
+    {"pid-probes", no_argument, &filter.pidprobes, 1},
+    {NULL, 0, NULL, 0}
+  };
+
   opterr = 0;
   memset(&filter, 0, sizeof(probefilter_t));
-  while ((c = getopt_long(argc, argv, ":p:m:f:n:", longopts, NULL)) != -1){
+
+  while ((c = getopt_long(argc, argv, ":p:m:f:n:", globopt, NULL)) != -1){
   switch(c){
     case 'p': filter.provider = optarg; break;
     case 'm': filter.mod = optarg; break;
@@ -108,21 +124,31 @@ main(int argc, char *argv[])
     case 'n': filter.name = optarg; break;
     default: opterr = 1; break;
   }}
+  optind--;
+  argv += optind;
+  argc -= optind;
 
-#define name argv[0]
+  optind = 0;
+  while ((c = getopt_long_only(argc, argv, ":", longopts, NULL)) != -1){
+  switch(c){
+    case 0: break; /* set long option */
+    default: opterr = 1; break;
+  }}
 
   if (opterr)
   {
     printf(
-      "usage: %s [options]\n"
-      "options:\n", name);
-    puts(
-      "    -p pattern        --provider=pattern\n"
-      "    -m pattern        --module=pattern\n"
-      "    -f pattern        --function=pattern\n"
-      "    -n pattern        --name=pattern\n");
-    printf("%s lists dtrace probes. The list maybe filtered to those "
-           "matching user provided glob patterns.\n", name);
+      "usage: %s [options] [--fieldname=pattern ...]\n"
+      "options:\n"
+      "         \t--pid-probes\tshow pid specific probes\n"
+      "filters:\n"
+      , getprogname());
+    for (const struct option *opt = globopt; 
+          opt && opt->name; opt++)
+      printf("  -%c glob\t--%s=glob\n", (char)opt->val, opt->name);
+    puts("\n"
+      "Lists dtrace probes. Rudimentary filtering may be applied using "
+      "glob(3) pattern per field.");
     return EXIT_FAILURE;
   }
 
