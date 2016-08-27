@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  * 
- * Copyright (c) 2015 Andrew Griffiths
+ * Copyright (c) 2015 Andrew Griffiths      https://github.com/gdawg/lsdtrace
 */
 #include <stdio.h>
 #include <stdlib.h>
