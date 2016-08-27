@@ -24,8 +24,6 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <libgen.h>
 #include <ctype.h>
 #include <getopt.h>
 #include <fnmatch.h>
